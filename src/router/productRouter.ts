@@ -4,7 +4,7 @@ import ProductController from '../controllers/productController';
 const productRouter = new Hono();
 const productController = new ProductController();
 
-productRouter.post('/', productController.createProduct);
+productRouter.post('/', productController.addProduct);
 productRouter.get('/', productController.getAllProducts);
 productRouter.get('/:id', productController.getProductById);
 productRouter.patch('/:id', productController.updateProduct);

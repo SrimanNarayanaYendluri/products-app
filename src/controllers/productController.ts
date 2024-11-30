@@ -4,27 +4,24 @@ import { validateRequest } from "../validations/validationRequest";
 import { ValidatedCreateProduct, ValidatedUpdateProduct } from "../validations/schemas/vProductSchema"
 import { PRODUCT_VALIDATION_ERROR, PRODUCT_ADD_SUCCESSFULLY, PRODUCTS_FETCHED_SUCCESSFULLY, PRODUCT_NOT_FOUND, PRODUCT_DETAILS_FETCHED_SUCCESS, PRODUCT_UPDATE_SUCCESSFULLY, PRODUCT_DELETE_SUCCESSFULLY } from "../constants/appMessages";
 import { sendSuccessResponse } from "../utils/responseUtils"
-import BadRequestException from "../exceptions/badRequestException";
 import { DBTableColumns, OrderByQueryData, SortDirection, WhereQueryData } from "../types/db.types";
 import { Product, products } from "../schemas/productSchema";
-import { deleteRecordById, getPaginatedRecordsConditionally, getRecordById, softDeleteRecordById, updateRecordById } from "../services/db/baseDBService";
+import { getPaginatedRecordsConditionally, getRecordById, saveSingleRecord, softDeleteRecordById, updateRecordById } from "../services/db/baseDBService";
 import NotFoundException from "../exceptions/notFoundException";
 import { seedProducts } from "../seeder/productsSeeder";
 
 class ProductController {
 
-  createProduct = async (c: Context) => {
+  addProduct = async (c: Context) => {
     try {
       const requestBody = await c.req.json();
 
       const validatedProduct = await validateRequest<ValidatedCreateProduct>('product:create-product', requestBody, PRODUCT_VALIDATION_ERROR);
 
       const productData = {
-        ...validatedProduct,
-        created_at: validatedProduct.created_at ? new Date(validatedProduct.created_at) : undefined,
-        updated_at: validatedProduct.updated_at ? new Date(validatedProduct.updated_at) : undefined,
+        ...validatedProduct
       };
-      const createdProduct = await insertProduct(productData);
+      const createdProduct = await saveSingleRecord<Product>(products, productData);
 
       return sendSuccessResponse(c, 201, PRODUCT_ADD_SUCCESSFULLY, createdProduct);
 
@@ -40,8 +37,11 @@ class ProductController {
       const pageSize = +c.req.query('page_size')! || 10;
       const searchString = c.req.query('search_string') || null;
       const isActive = c.req.query('is_active') || null;
-      const priceMin = c.req.query('price_min');
-      const priceMax = c.req.query('price_max');
+      // const priceMin = +c.req.query('price_min')! || null;
+      // const priceMax = +c.req.query('price_max')! || null;
+      const priceMin = c.req.query('price_min') ? Number(c.req.query('price_min')) : null;
+      const priceMax = c.req.query('price_max') ? Number(c.req.query('price_max')) : null;
+  
 
       let orderByQueryData: OrderByQueryData<Product> = {
         columns: ['id'],
@@ -80,14 +80,20 @@ class ProductController {
       }
 
       if (priceMin && priceMax) {
+       
         whereQueryData.columns.push('price');
-        whereQueryData.values.push(`BETWEEN ${priceMin} AND ${priceMax}`);
-      } else if (priceMin) {
+        whereQueryData.values.push(`BETWEEN ${priceMin} AND ${priceMax}`); // Directly include the AND part in the value
+      }
+      // if (priceMin !== null && priceMax !== null) {
+      //   whereQueryData.columns.push('price');
+      //   whereQueryData.values.push({ between: [priceMin, priceMax] });
+    // }
+      else if (priceMin !== null) {
         whereQueryData.columns.push('price');
-        whereQueryData.values.push(`>= ${priceMin}`);
-      } else if (priceMax) {
+        whereQueryData.values.push({ operator: '>=', value: priceMin });
+      } else if (priceMax !== null) {
         whereQueryData.columns.push('price');
-        whereQueryData.values.push(`<= ${priceMax}`);
+        whereQueryData.values.push({ operator: '<=', value: priceMax });
       }
 
       const columnsToSelect = [
@@ -101,6 +107,7 @@ class ProductController {
         'created_at',
         'updated_at'
       ] as const;
+      console.log('whereQueryData:', JSON.stringify(whereQueryData, null, 2));
 
       const results = await getPaginatedRecordsConditionally<Product>(
         products,
@@ -121,51 +128,51 @@ class ProductController {
     }
   };
 
-   
+
   getProductById = async (c: Context) => {
     try {
-      const id = +c.req.param('id'); 
+      const id = +c.req.param('id');
 
       const productDetails = await getRecordById<Product>(products, id);
-      
+
       if (!productDetails) {
-        throw new NotFoundException(PRODUCT_NOT_FOUND);  
+        throw new NotFoundException(PRODUCT_NOT_FOUND);
       }
 
       return sendSuccessResponse(c, 200, PRODUCT_DETAILS_FETCHED_SUCCESS, productDetails);
-  
+
     } catch (error: any) {
       throw error;
     }
   };
-  
+
   updateProduct = async (c: Context) => {
     try {
-      const id = +c.req.param('id'); 
+      const id = +c.req.param('id');
 
       const requestBody = await c.req.json();
-  
+
       const validatedProduct = await validateRequest<ValidatedUpdateProduct>(
-        'product:update-product', 
-        requestBody, 
+        'product:update-product',
+        requestBody,
         PRODUCT_VALIDATION_ERROR
       );
-  
+
       const existingProduct = await getRecordById<Product>(products, id);
-      
+
       if (!existingProduct) {
-        throw new NotFoundException(PRODUCT_NOT_FOUND); 
+        throw new NotFoundException(PRODUCT_NOT_FOUND);
       }
-  
-      
+
+
       const updatedProductData = {
         ...existingProduct,
-        ...validatedProduct, 
+        ...validatedProduct,
         updated_at: new Date(),
       };
 
       const updatedProduct = await updateRecordById<Product>(products, id, updatedProductData);
-      
+
       return sendSuccessResponse(c, 200, PRODUCT_UPDATE_SUCCESSFULLY, updatedProduct);
     } catch (error: any) {
       throw error;
@@ -174,15 +181,15 @@ class ProductController {
 
   softDeleteProduct = async (c: Context) => {
     try {
-      const id = +c.req.param('id'); 
+      const id = +c.req.param('id');
       const existingProduct = await getRecordById<Product>(products, id);
-      
+
       if (!existingProduct) {
-        throw new NotFoundException(PRODUCT_NOT_FOUND); 
+        throw new NotFoundException(PRODUCT_NOT_FOUND);
       }
-      
+
       await softDeleteRecordById<Product>(products, id, { deleted_at: new Date() });
-      
+
       return sendSuccessResponse(c, 200, PRODUCT_DELETE_SUCCESSFULLY);
     } catch (error: any) {
       throw error;
@@ -191,7 +198,7 @@ class ProductController {
 
   seedProductsHandler = async (c: Context) => {
     try {
-    
+
       await seedProducts();
 
       return sendSuccessResponse(c, 200, "Products table seeded successfully.");

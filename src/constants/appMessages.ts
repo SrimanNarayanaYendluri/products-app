@@ -44,6 +44,7 @@ export const USER_EMAIL_EXISTS = 'Email already exists';
 
 export const NAME_REQUIRED = 'Product name is required';
 export const NAME_IS_STRING = 'Product name must be a string';
+export const NAME_TOO_SHORT = 'Product name must be at least 2 characters long';
 export const PRODUCT_CODE_REQUIRED = 'Product code is required';
 export const PRODUCT_CODE_IS_STRING = 'Product code must be a string';
 export const PRICE_REQUIRED = 'Price is required';
