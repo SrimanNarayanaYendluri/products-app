@@ -1,7 +1,7 @@
 import { flatten, safeParseAsync } from "valibot";
 import { AppActivity, ValidatedRequest } from "../types/app.types";
 import UnprocessableContentException from "../exceptions/unprocessableContentException";
-import { VCreateProductSchema } from "../validations/schemas/vCreateProductSchema";
+import { VCreateProductSchema, VUpdateProductSchema } from "./schemas/vProductSchema";
 import { VCreateUserSchema } from "../validations/schemas/vCreateUserSchema";
 
 export const validateRequest = async<R extends ValidatedRequest>(actionType: AppActivity, reqData: any, errorMessage: string) => {
@@ -14,7 +14,9 @@ export const validateRequest = async<R extends ValidatedRequest>(actionType: App
         case "product:create-product":
             schema = VCreateProductSchema;
             break;      
-        
+        case "product:update-product":
+            schema = VUpdateProductSchema;
+            break;
     }
 
     const validation = await safeParseAsync(schema!, reqData, {

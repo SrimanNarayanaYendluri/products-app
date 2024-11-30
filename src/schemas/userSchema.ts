@@ -18,7 +18,7 @@ export const users = pgTable("users", {
     usernameIndex: index("username_idx").on(table.user_name),
     emailIndex: index("email_idx").on(table.email),
     phoneNumberIndex: index("phone_number_idx").on(table.phone_number),
-    createdAtIndex: index("created_at_idx").on(table.created_at),
+    usersCreatedAtIdx: index("users_created_at_idx").on(table.created_at),
 })
 );
 

@@ -1,4 +1,5 @@
-import { ValidatedCreateProduct } from "../validations/schemas/vCreateProductSchema"
+import { Product } from "../schemas/productSchema";
+import { ValidatedCreateProduct, ValidatedUpdateProduct } from "../validations/schemas/vProductSchema"
 import { ValidatedCreateUser } from "../validations/schemas/vCreateUserSchema";
 import { DBTableRow } from "./db.types";
 
@@ -18,13 +19,19 @@ export type PaginatedResp<T extends DBTableRow> = {
 
 export type CreateProductResponse = {
   name: string;
-  description: string | null | undefined; 
+  description: string | null | undefined;
   product_code: string;
   price: number;
   quantity: number;
   is_active: boolean | null | undefined;
   created_at: Date | null | undefined;
   updated_at: Date | null | undefined;
+};
+
+
+export type  getAllProductsRespnseData = {
+  pagination_info: PaginationInfo;
+  records: Partial<Product>[]; 
 };
 
 export type InsertUserResponse = {
@@ -38,9 +45,9 @@ export type InsertUserResponse = {
   created_at: Date | null;
   updated_at: Date | null;
 }
-export type AppResponseData =
-  CreateProductResponse |
-  InsertUserResponse
+export type AppResponseData = CreateProductResponse
+  | InsertUserResponse
+  | getAllProductsRespnseData
 
 export type SuccessResponseData = {
   status: number;
@@ -49,10 +56,10 @@ export type SuccessResponseData = {
   data?: AppResponseData;
 };
 
-export type  UserActivity = "user:create-user"
-  
-export type ProductActivity = "product:create-product"
+export type UserActivity = "user:create-user"
+
+export type ProductActivity = "product:create-product" | "product:update-product"
 
 export type AppActivity = UserActivity | ProductActivity
 
-export type ValidatedRequest = ValidatedCreateUser | ValidatedCreateProduct
+export type ValidatedRequest = ValidatedCreateUser | ValidatedCreateProduct | ValidatedUpdateProduct
