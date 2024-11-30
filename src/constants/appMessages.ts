@@ -54,7 +54,6 @@ export const QUANTITY_IS_REQUIRED = 'Quantity is required';
 
 export const PRODUCT_VALIDATION_ERROR = 'Product Details provided do not meet the required validation criteria';
 export const PRODUCT_ADD_SUCCESSFULLY = 'Product added successfully';
-export const PRODUCT_NAME_EXISTS = 'Product name already exists';
 export const PRODUCT_CODE_EXISTS = 'Product code already exists';
 export const PRODUCT_NOT_FOUND = 'Product not found';
 export const PRODUCTS_FETCHED_SUCCESSFULLY = 'Products fetched successfully';

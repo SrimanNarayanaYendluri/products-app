@@ -1,14 +1,14 @@
 import { Context } from "hono";
-import { insertProduct } from "../services/db/productServices";
 import { validateRequest } from "../validations/validationRequest";
 import { ValidatedCreateProduct, ValidatedUpdateProduct } from "../validations/schemas/vProductSchema"
-import { PRODUCT_VALIDATION_ERROR, PRODUCT_ADD_SUCCESSFULLY, PRODUCTS_FETCHED_SUCCESSFULLY, PRODUCT_NOT_FOUND, PRODUCT_DETAILS_FETCHED_SUCCESS, PRODUCT_UPDATE_SUCCESSFULLY, PRODUCT_DELETE_SUCCESSFULLY } from "../constants/appMessages";
+import { PRODUCT_VALIDATION_ERROR, PRODUCT_ADD_SUCCESSFULLY, PRODUCTS_FETCHED_SUCCESSFULLY, PRODUCT_NOT_FOUND, PRODUCT_DETAILS_FETCHED_SUCCESS, PRODUCT_UPDATE_SUCCESSFULLY, PRODUCT_DELETE_SUCCESSFULLY, PRODUCT_CODE_EXISTS } from "../constants/appMessages";
 import { sendSuccessResponse } from "../utils/responseUtils"
 import { DBTableColumns, OrderByQueryData, SortDirection, WhereQueryData } from "../types/db.types";
 import { Product, products } from "../schemas/productSchema";
 import { getPaginatedRecordsConditionally, getRecordById, saveSingleRecord, softDeleteRecordById, updateRecordById } from "../services/db/baseDBService";
 import NotFoundException from "../exceptions/notFoundException";
 import { seedProducts } from "../seeder/productsSeeder";
+import UnprocessableContentException from "../exceptions/unprocessableContentException";
 
 class ProductController {
 
@@ -26,6 +26,9 @@ class ProductController {
       return sendSuccessResponse(c, 201, PRODUCT_ADD_SUCCESSFULLY, createdProduct);
 
     } catch (error: any) {
+      if (error.constraint === 'products_product_code_unique') {
+        throw new UnprocessableContentException(PRODUCT_CODE_EXISTS);
+      }
       throw error;
     }
   };
@@ -41,7 +44,7 @@ class ProductController {
       // const priceMax = +c.req.query('price_max')! || null;
       const priceMin = c.req.query('price_min') ? Number(c.req.query('price_min')) : null;
       const priceMax = c.req.query('price_max') ? Number(c.req.query('price_max')) : null;
-  
+
 
       let orderByQueryData: OrderByQueryData<Product> = {
         columns: ['id'],
@@ -79,16 +82,10 @@ class ProductController {
         whereQueryData.values.push(isActive === "true");
       }
 
-      if (priceMin && priceMax) {
-       
+      if (priceMin !== null && priceMax !== null) {
         whereQueryData.columns.push('price');
-        whereQueryData.values.push(`BETWEEN ${priceMin} AND ${priceMax}`); // Directly include the AND part in the value
-      }
-      // if (priceMin !== null && priceMax !== null) {
-      //   whereQueryData.columns.push('price');
-      //   whereQueryData.values.push({ between: [priceMin, priceMax] });
-    // }
-      else if (priceMin !== null) {
+        whereQueryData.values.push({ between: [priceMin, priceMax] });
+      } else if (priceMin !== null) {
         whereQueryData.columns.push('price');
         whereQueryData.values.push({ operator: '>=', value: priceMin });
       } else if (priceMax !== null) {
