@@ -40,8 +40,6 @@ class ProductController {
       const pageSize = +c.req.query('page_size')! || 10;
       const searchString = c.req.query('search_string') || null;
       const isActive = c.req.query('is_active') || null;
-      // const priceMin = +c.req.query('price_min')! || null;
-      // const priceMax = +c.req.query('price_max')! || null;
       const priceMin = c.req.query('price_min') ? Number(c.req.query('price_min')) : null;
       const priceMax = c.req.query('price_max') ? Number(c.req.query('price_max')) : null;
 
@@ -104,7 +102,6 @@ class ProductController {
         'created_at',
         'updated_at'
       ] as const;
-      console.log('whereQueryData:', JSON.stringify(whereQueryData, null, 2));
 
       const results = await getPaginatedRecordsConditionally<Product>(
         products,
@@ -115,7 +112,7 @@ class ProductController {
         columnsToSelect
       );
 
-      if (!results || results.records.length === 0) {
+      if (!results) {
         throw new NotFoundException(PRODUCT_NOT_FOUND);
       }
 
